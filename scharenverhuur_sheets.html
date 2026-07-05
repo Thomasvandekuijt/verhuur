@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scharenverhuur</title>
+<style>
+  :root{
+    --ink:#1c1b19;
+    --paper:#f6f4f0;
+    --surface:#ffffff;
+    --border:#e2ddd3;
+    --muted:#8b8680;
+    --amber:#c9832c;
+    --amber-dark:#8f5c1a;
+    --amber-bg:#fbf0dd;
+    --green:#3d7a5c;
+    --green-bg:#e7f1ec;
+    --rust:#b54a3f;
+    --rust-bg:#fbeae7;
+    --blue:#3a6a8c;
+    --blue-bg:#e8f0f5;
+    --gray-bg:#eeece7;
+    --alert:#e0201b;
+    --alert-bg:#fbdedb;
+    --rood-type:#b3261e;
+    --goud-type:#a4791f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--paper);color:var(--ink);}
+  
+  .login-screen{position:fixed;inset:0;background:linear-gradient(135deg, #f6f4f0 0%, #eeece7 100%);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .login-box{background:var(--surface);border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,0.1);}
+  .login-box h1{font-size:26px;margin:0 0 8px;font-weight:700;}
+  .login-box .sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .login-box label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .login-box input[type=password]{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--paper);color:var(--ink);margin-bottom:20px;}
+  .login-box button{width:100%;padding:11px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;}
+  .login-box button:hover{background:#000;}
+  .login-error{background:var(--alert-bg);color:var(--alert);padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+  
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 60px;}
+  header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  h1{font-size:28px;font-weight:700;letter-spacing:-0.01em;margin:0;}
+  .sub{color:var(--muted);font-size:14px;margin-top:4px;}
+  .header-actions{display:flex;gap:10px;align-items:center;}
+  .logout-btn{background:var(--rust-bg);color:var(--rust);border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+
+  .maintabs{display:flex;gap:4px;background:var(--gray-bg);padding:4px;border-radius:10px;width:fit-content;margin-bottom:22px;}
+  .maintab{border:none;background:transparent;padding:8px 18px;border-radius:7px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--muted);}
+  .maintab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
+  .pill{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);}
+  .pill b{font-size:15px;}
+  .pill.green{background:var(--green-bg);color:var(--green);border-color:transparent;}
+  .pill.rust{background:var(--rust-bg);color:var(--rust);border-color:transparent;}
+  .pill.blue{background:var(--blue-bg);color:var(--blue);border-color:transparent;}
+  .pill.alert{background:var(--alert-bg);color:var(--alert);border-color:transparent;}
+  .pill.gray{background:var(--gray-bg);color:var(--ink);border-color:transparent;}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+  .tabs{display:flex;gap:4px;background:var(--gray-bg);padding:4px;border-radius:10px;flex-wrap:wrap;}
+  .tab{border:none;background:transparent;padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+  input[type=text]{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);font-size:14px;background:var(--surface);color:var(--ink);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+  .card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:transform .08s ease, box-shadow .08s ease;border-left:4px solid var(--border);}
+  .card:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,0.06);}
+  .card.beschikbaar{border-left-color:var(--green);}
+  .card.verhuurd{border-left-color:var(--amber);}
+  .card.gereserveerd{border-left-color:var(--blue);}
+  .card.te-laat{border-left-color:var(--rust);}
+  .card.niet-beschikbaar{border-left-color:var(--alert);border-color:var(--alert);background:var(--alert-bg);}
+  .card .nr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted);}
+  .card .hole{position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--paper);border:1px solid var(--border);}
+  .card .status{font-weight:700;font-size:14px;margin-top:6px;}
+  .card.beschikbaar .status{color:var(--green);}
+  .card.verhuurd .status{color:var(--amber-dark);}
+  .card.gereserveerd .status{color:var(--blue);}
+  .card.te-laat .status{color:var(--rust);}
+  .card.niet-beschikbaar .status{color:var(--alert);}
+  .card .huurder{font-size:12.5px;color:var(--ink);margin-top:6px;line-height:1.4;}
+  .card .datum{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .type-badge{font-size:10.5px;font-weight:700;margin-top:3px;display:inline-flex;align-items:center;gap:5px;}
+  .type-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;}
+  .type-badge.type-rood{color:var(--rood-type);}
+  .type-badge.type-goud{color:var(--goud-type);}
+
+  .overlay{position:fixed;inset:0;background:rgba(28,27,25,0.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;overflow-y:auto;}
+  .modal{background:var(--surface);border-radius:14px;padding:24px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;position:relative;margin:auto;}
+  .modal h2{margin:0 0 2px;font-size:19px;}
+  .modal .modal-sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 5px;}
+  input[type=date], textarea, input[type=text].field{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border);font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);}
+  textarea{resize:vertical;min-height:60px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .modal-actions{display:flex;gap:8px;margin-top:20px;}
+  button.primary, button.secondary, button.danger, button.outline, button.alertbtn{border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;}
+  button.primary{background:var(--ink);color:#fff;flex:1;}
+  button.primary:hover{background:#000;}
+  button.secondary{background:var(--gray-bg);color:var(--ink);}
+  button.danger{background:var(--rust-bg);color:var(--rust);}
+  button.linklike{background:none;border:none;color:var(--alert);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;margin-top:14px;}
+  button.close-x{position:absolute;top:18px;right:18px;background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;}
+  .detail-box{background:var(--paper);border-radius:8px;padding:12px 14px;font-size:13.5px;line-height:1.7;margin-top:4px;}
+  .detail-box .k{color:var(--muted);}
+  .warn-badge{display:inline-block;background:var(--rust-bg);color:var(--rust);font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px;margin-bottom:10px;}
+  .alert-badge{display:inline-block;background:var(--alert-bg);color:var(--alert);font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px;margin-bottom:10px;}
+  .empty-hint{color:var(--muted);font-size:13px;padding:30px;text-align:center;}
+  .history-toggle{margin-top:30px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;}
+  .history-list{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+  .history-item{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:8px 0;border-bottom:1px solid var(--border);color:var(--muted);}
+  .history-item b{color:var(--ink);}
+
+  .agenda-list{display:flex;flex-direction:column;gap:10px;}
+  .agenda-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .agenda-row .left b{font-size:14.5px;}
+  .agenda-row .meta{color:var(--muted);font-size:12.5px;margin-top:3px;}
+  .agenda-row .dates{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--blue-bg);color:var(--blue);padding:5px 10px;border-radius:7px;}
+  .agenda-actions{display:flex;gap:6px;}
+  .agenda-actions button{padding:7px 12px;font-size:12.5px;}
+
+  .agenda-sub-tabs{display:flex;gap:4px;background:var(--gray-bg);padding:4px;border-radius:10px;}
+  .agenda-sub-tabs button{border:none;background:transparent;padding:6px 13px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .agenda-sub-tabs button.active{background:var(--surface);color:var(--ink);}
+
+  .cal-nav{display:flex;align-items:center;gap:10px;margin:16px 0 10px;}
+  .cal-nav button{border:1px solid var(--border);background:var(--surface);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;color:var(--ink);}
+  .cal-nav .cal-title{font-weight:700;font-size:15px;min-width:150px;text-align:center;}
+  .cal-nav .today-btn{width:auto;padding:0 12px;font-size:12.5px;font-weight:600;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-dow{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding-bottom:4px;}
+  .cal-cell{min-height:74px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;cursor:default;}
+  .cal-cell.empty{background:transparent;border:none;}
+  .cal-cell.today{border-color:var(--ink);border-width:1.5px;}
+  .cal-daynum{font-size:11.5px;font-weight:700;color:var(--muted);}
+  .cal-cell.today .cal-daynum{color:var(--ink);}
+  .cal-chips{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
+  .cal-chip{font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cal-chip.rood{background:#f6dcda;color:var(--rood-type);}
+  .cal-chip.goud{background:#f2e9d3;color:var(--goud-type);}
+  .cal-more{font-size:10px;color:var(--muted);font-weight:600;}
+  .loading{text-align:center;padding:40px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <h1>Scharenverhuur</h1>
+    <p class="sub">Gedeeld verhuur-managementsysteem</p>
+    <div class="login-error" id="loginError">Onjuist wachtwoord</div>
+    <label for="pwInput">Wachtwoord</label>
+    <input type="password" id="pwInput" placeholder="Voer wachtwoord in">
+    <button id="loginBtn">Inloggen</button>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none;">
+  <header>
+    <div>
+      <h1>Scharenverhuur</h1>
+      <div class="sub">Overzicht van alle 40 scharen · Google Sheets backend</div>
+    </div>
+    <div class="header-actions">
+      <button class="logout-btn" id="logoutBtn">Uitloggen</button>
+    </div>
+  </header>
+  <div class="maintabs">
+    <button class="maintab active" data-maintab="overzicht">Overzicht</button>
+    <button class="maintab" data-maintab="agenda">Agenda</button>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script>
+// SETUP: Vul hier je Google Apps Script URL in
+// Ga naar je Google Sheet → Extensions → Apps Script → Deploy → Web app
+// Kopieer de URL en plak die hier
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/d/YOUR_SCRIPT_ID_HERE/usercontent';
+
+const TOTAL = 40;
+const CORRECT_PASSWORD = 'verhuur@krabbendam.nl';
+const DOW = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
+
+let isLoggedIn = false;
+let scharen = [];
+let historie = [];
+let reserveringen = [];
+let mainTab = 'overzicht';
+let filter = 'alle';
+let zoek = '';
+let modalState = null;
+let historyOpen = false;
+let agendaView = 'lijst';
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return '—'; const [y,m,day] = d.split('-'); return day+'-'+m+'-'+y; }
+function isTeLaat(item){ return item.status === 'verhuurd' && item.datumTerugVerwacht && item.datumTerugVerwacht < todayStr(); }
+function uid(){ return 'r'+Date.now()+Math.random().toString(36).slice(2,7); }
+function schaarType(id){ return id<=10 ? 'rood' : 'goud'; }
+function typeLabel(id){ return schaarType(id)==='rood' ? 'Rode schaar' : 'Gouden schaar'; }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dstr(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+
+function isGereserveerd(schaarId){
+  return reserveringen.some(r => r.schaarId === schaarId && r.startDatum > todayStr());
+}
+
+async function loadData(){
+  try{
+    const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getAll');
+    const data = await response.json();
+    scharen = data.scharen || [];
+    reserveringen = data.reserveringen || [];
+    historie = data.historie || [];
+  }catch(e){ 
+    console.error('Laden mislukt:', e); 
+    alert('Fout bij laden. Controleer de Google Script URL.');
+  }
+  render();
+}
+
+async function saveToSheets(action, payload){
+  try{
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...payload })
+    });
+    const result = await response.json();
+    if (result.data) {
+      scharen = result.data.scharen || [];
+      reserveringen = result.data.reserveringen || [];
+      historie = result.data.historie || [];
+    }
+    render();
+  }catch(e){ 
+    console.error('Opslaan mislukt:', e); 
+    alert('Fout bij opslaan');
+  }
+}
+
+function checkPassword(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw === CORRECT_PASSWORD){
+    isLoggedIn = true;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout(){
+  if(confirm('Zeker dat je wilt uitloggen?')){
+    isLoggedIn = false;
+    document.getElementById('pwInput').value = '';
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+}
+
+function reserveringenVoor(schaarId){ return reserveringen.filter(r=>r.schaarId===schaarId).sort((a,b)=>a.startDatum.localeCompare(b.startDatum)); }
+
+function openModal(id){
+  const item = scharen.find(s=>s.id===id);
+  let mode = 'details';
+  if(item.status === 'beschikbaar' && !isGereserveerd(id)) mode = 'verhuren';
+  modalState = { id, mode };
+  render();
+}
+function switchToNietBeschikbaar(id){ modalState = { id, mode: 'nietbeschikbaar' }; render(); }
+function closeModal(){ modalState = null; render(); }
+
+function nieuweVerhuring(data){
+  const schaarId = data.schaarId;
+  const datumUit = data.datumUit;
+  const isReservering = datumUit > todayStr();
+  
+  if(isReservering){
+    const resData = {
+      id: uid(),
+      schaarId: schaarId,
+      huurder: data.huurder,
+      soNummer: data.soNummer,
+      notities: data.notities,
+      startDatum: datumUit,
+      eindDatum: data.datumTerugVerwacht,
+      type: 'gereserveerd'
+    };
+    saveToSheets('addReservering', resData);
+  } else {
+    const schaarpayload = {
+      schaarId: schaarId,
+      status: 'verhuurd',
+      huurder: data.huurder,
+      soNummer: data.soNummer,
+      notities: data.notities,
+      datumUit: datumUit,
+      datumTerugVerwacht: data.datumTerugVerwacht,
+      nietBeschikbaarReden: ''
+    };
+    saveToSheets('updateSchaar', schaarpayload);
+  }
+  closeModal();
+}
+
+function terugmelden(id){
+  const item = scharen.find(s=>s.id===id);
+  const histData = {
+    id: uid(),
+    schaarId: id,
+    huurder: item.huurder,
+    soNummer: item.soNummer,
+    notities: item.notities,
+    datumUit: item.datumUit,
+    datumTerugVerwacht: item.datumTerugVerwacht,
+    datumTerugWerkelijk: todayStr(),
+    type: 'verhuring'
+  };
+  
+  const schaarpayload = {
+    schaarId: id,
+    status: 'beschikbaar',
+    huurder: '',
+    soNummer: '',
+    notities: '',
+    datumUit: '',
+    datumTerugVerwacht: '',
+    nietBeschikbaarReden: ''
+  };
+  
+  saveToSheets('addHistorie', histData);
+  setTimeout(() => saveToSheets('updateSchaar', schaarpayload), 500);
+  closeModal();
+}
+
+function meldNietBeschikbaar(id, reden){
+  const schaarpayload = {
+    schaarId: id,
+    status: 'niet-beschikbaar',
+    huurder: '',
+    soNummer: '',
+    notities: '',
+    datumUit: '',
+    datumTerugVerwacht: '',
+    nietBeschikbaarReden: reden
+  };
+  saveToSheets('updateSchaar', schaarpayload);
+  closeModal();
+}
+
+function meldWeerBeschikbaar(id){
+  const schaarpayload = {
+    schaarId: id,
+    status: 'beschikbaar',
+    huurder: '',
+    soNummer: '',
+    notities: '',
+    datumUit: '',
+    datumTerugVerwacht: '',
+    nietBeschikbaarReden: ''
+  };
+  saveToSheets('updateSchaar', schaarpayload);
+  closeModal();
+}
+
+function verwijderReservering(id){ 
+  saveToSheets('deleteReservering', { id }); 
+}
+
+function counts(){
+  const beschikbaar = scharen.filter(s=>s.status==='beschikbaar' && !isGereserveerd(s.id)).length;
+  const verhuurd = scharen.filter(s=>s.status==='verhuurd').length;
+  const gereserveerd = scharen.filter(s=>isGereserveerd(s.id)).length;
+  const teLaat = scharen.filter(isTeLaat).length;
+  const nietBeschikbaar = scharen.filter(s=>s.status==='niet-beschikbaar').length;
+  return {beschikbaar, verhuurd, gereserveerd, teLaat, nietBeschikbaar};
+}
+
+function filteredScharen(){
+  return scharen.filter(s=>{
+    const gereserveerd = isGereserveerd(s.id);
+    if(filter==='beschikbaar' && (s.status!=='beschikbaar' || gereserveerd)) return false;
+    if(filter==='verhuurd' && s.status!=='verhuurd') return false;
+    if(filter==='gereserveerd' && !gereserveerd) return false;
+    if(filter==='te-laat' && !isTeLaat(s)) return false;
+    if(filter==='niet-beschikbaar' && s.status!=='niet-beschikbaar') return false;
+    if(zoek.trim()){
+      const q = zoek.trim().toLowerCase();
+      const hay = (String(s.id)+' '+s.huurder+' '+s.soNummer).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function cardClass(s){
+  if(s.status==='niet-beschikbaar') return 'niet-beschikbaar';
+  if(isTeLaat(s)) return 'te-laat';
+  if(isGereserveerd(s.id)) return 'gereserveerd';
+  return s.status;
+}
+
+function statusLabel(s){
+  if(s.status==='niet-beschikbaar') return 'Niet beschikbaar';
+  if(isTeLaat(s)) return 'Te laat';
+  if(isGereserveerd(s.id)) return 'Gereserveerd';
+  if(s.status==='verhuurd') return 'Verhuurd';
+  return 'Beschikbaar';
+}
+
+function renderOverzicht(){
+  const c = counts();
+  const list = filteredScharen();
+  return `
+    <div class="summary">
+      <div class="pill gray"><b>${TOTAL}</b> totaal</div>
+      <div class="pill green"><b>${c.beschikbaar}</b> beschikbaar</div>
+      <div class="pill blue"><b>${c.gereserveerd}</b> gereserveerd</div>
+      <div class="pill gray"><b>${c.verhuurd}</b> verhuurd</div>
+      ${c.teLaat>0 ? `<div class="pill rust"><b>${c.teLaat}</b> te laat</div>` : ''}
+      ${c.nietBeschikbaar>0 ? `<div class="pill alert"><b>${c.nietBeschikbaar}</b> niet beschikbaar</div>` : ''}
+    </div>
+    <div class="controls">
+      <div class="tabs">
+        ${['alle','beschikbaar','gereserveerd','verhuurd','te-laat','niet-beschikbaar'].map(f=>`
+          <button class="tab ${filter===f?'active':''}" data-filter="${f}">${f==='alle'?'Alle': f==='beschikbaar'?'Beschikbaar': f==='gereserveerd'?'Gereserveerd': f==='verhuurd'?'Verhuurd': f==='te-laat'?'Te laat':'Niet beschikbaar'}</button>`).join('')}
+      </div>
+      <input type="text" id="zoekInput" placeholder="Zoek op naam, SO-nummer of nummer…" value="${zoek.replace(/"/g,'&quot;')}">
+    </div>
+    <div class="grid">
+      ${list.length===0 ? `<div class="empty-hint">Geen scharen gevonden.</div>` : list.map(s=>{
+        const resv = reserveringenVoor(s.id);
+        const type = schaarType(s.id);
+        return `
+        <div class="card ${cardClass(s)}" data-open="${s.id}">
+          <span class="hole"></span>
+          <div class="nr">SCHAAR #${String(s.id).padStart(2,'0')}</div>
+          <div class="type-badge type-${type}">${typeLabel(s.id)}</div>
+          <div class="status">${statusLabel(s)}</div>
+          ${s.status==='verhuurd' ? `
+            <div class="huurder">${escapeHtml(s.huurder||'—')}</div>
+            <div class="datum">terug: ${fmtDate(s.datumTerugVerwacht)}</div>
+          ` : ''}
+          ${isGereserveerd(s.id) && s.status!=='verhuurd' ? `
+            <div class="huurder">${escapeHtml(resv[0]?.huurder||'—')}</div>
+            <div class="datum">vanaf: ${fmtDate(resv[0]?.startDatum)}</div>
+          ` : ''}
+          ${s.status==='niet-beschikbaar' ? `<div class="huurder">${escapeHtml(s.nietBeschikbaarReden||'Geen reden')}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="history-toggle" id="historyToggle">${historyOpen?'Verberg':'Toon'} verhuurhistorie (${historie.length})</button>
+    ${historyOpen ? `
+      <div class="history-list">
+        ${historie.length===0 ? `<div class="empty-hint">Nog geen historie.</div>` : historie.slice(0,40).map(h=>`
+          <div class="history-item">
+            <span><b>#${String(h.schaarId).padStart(2,'0')}</b> — ${escapeHtml(h.huurder||'—')} ${h.soNummer?('· SO '+escapeHtml(h.soNummer)):''}</span>
+            <span>${fmtDate(h.datumUit)} → ${fmtDate(h.datumTerugWerkelijk)}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderAgendaLijst(){
+  const sorted = [...reserveringen].sort((a,b)=>a.startDatum.localeCompare(b.startDatum));
+  return `
+    <div class="agenda-list">
+      ${sorted.length===0 ? `<div class="empty-hint">Geen toekomstige verhuuringen.</div>` : sorted.map(r=>{
+        return `
+        <div class="agenda-row">
+          <div class="left">
+            <b>Schaar #${String(r.schaarId).padStart(2,'0')}</b> — ${escapeHtml(r.huurder)}
+            <div class="meta">${r.soNummer?('SO '+escapeHtml(r.soNummer)+' · '):''}${escapeHtml(r.notities||'')}</div>
+          </div>
+          <div class="dates">${fmtDate(r.startDatum)} → ${fmtDate(r.eindDatum)}</div>
+          <div class="agenda-actions">
+            <button class="danger" data-verwijder-resv="${r.id}">Verwijderen</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderAgendaMaand(){
+  const monthNames = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  const first = new Date(calYear, calMonth, 1);
+  const startOffset = (first.getDay()+6)%7;
+  const totalDays = new Date(calYear, calMonth+1, 0).getDate();
+  const cells = [];
+  for(let i=0;i<startOffset;i++) cells.push(null);
+  for(let d=1; d<=totalDays; d++) cells.push(d);
+  while(cells.length % 7 !== 0) cells.push(null);
+
+  const td = todayStr();
+  let grid = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  grid += cells.map(d=>{
+    if(d===null) return `<div class="cal-cell empty"></div>`;
+    const ds = dstr(calYear, calMonth, d);
+    const dayResv = reserveringen.filter(r=> ds>=r.startDatum && ds<=r.eindDatum).sort((a,b)=>a.schaarId-b.schaarId);
+    const isToday = ds===td;
+    const shown = dayResv.slice(0,3);
+    const extra = dayResv.length - shown.length;
+    return `
+      <div class="cal-cell ${isToday?'today':''}">
+        <div class="cal-daynum">${d}</div>
+        <div class="cal-chips">
+          ${shown.map(r=>`<div class="cal-chip ${schaarType(r.schaarId)}">#${pad2(r.schaarId)}</div>`).join('')}
+          ${extra>0 ? `<div class="cal-more">+${extra}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="cal-nav">
+      <button id="calPrev">‹</button>
+      <div class="cal-title">${monthNames[calMonth]} ${calYear}</div>
+      <button id="calNext">›</button>
+      <button class="today-btn" id="calToday">Vandaag</button>
+    </div>
+    <div class="cal-grid">${grid}</div>
+  `;
+}
+
+function renderAgenda(){
+  return `
+    <div class="controls" style="justify-content:space-between;">
+      <div class="agenda-sub-tabs">
+        <button class="${agendaView==='lijst'?'active':''}" data-agview="lijst">Lijst</button>
+        <button class="${agendaView==='maand'?'active':''}" data-agview="maand">Maandkalender</button>
+      </div>
+    </div>
+    ${agendaView==='lijst' ? renderAgendaLijst() : renderAgendaMaand()}
+  `;
+}
+
+function render(){
+  if(!isLoggedIn) return;
+  const content = document.getElementById('content');
+  let html = mainTab==='overzicht' ? renderOverzicht() : renderAgenda();
+
+  if(modalState){
+    const mode = modalState.mode;
+    if(mode==='verhuren'){
+      const item = scharen.find(s=>s.id===modalState.id);
+      html += `<div class="overlay" id="overlay"><div class="modal"><button class="close-x" id="closeModal">✕</button>
+        <h2>Schaar #${String(item.id).padStart(2,'0')} verhuren</h2>
+        <div class="modal-sub">${typeLabel(item.id)}</div>
+        <label>Naam huurder</label>
+        <input type="text" class="field" id="f_huurder" placeholder="Bijv. Jansen Bouw B.V.">
+        <label>SO-nummer</label>
+        <input type="text" class="field" id="f_so" placeholder="Bijv. SO-10234">
+        <div class="row2">
+          <div><label>Datum uit</label><input type="date" id="f_uit" value="${todayStr()}"></div>
+          <div><label>Verwacht terug</label><input type="date" id="f_terug"></div>
+        </div>
+        <label>Notities</label>
+        <textarea id="f_notities" placeholder="Eventuele opmerkingen…"></textarea>
+        <div class="modal-actions">
+          <button class="secondary" id="cancelBtn">Annuleren</button>
+          <button class="primary" id="confirmVerhuurBtn">Verhuring opslaan</button>
+        </div>
+        <button class="linklike" id="markNietBeschikbaarBtn">Deze schaar is niet beschikbaar</button>
+      </div></div>`;
+    } else if(mode==='nietbeschikbaar'){
+      const item = scharen.find(s=>s.id===modalState.id);
+      html += `<div class="overlay" id="overlay"><div class="modal"><button class="close-x" id="closeModal">✕</button>
+        <h2>Schaar #${String(item.id).padStart(2,'0')} niet beschikbaar melden</h2>
+        <div class="modal-sub">${typeLabel(item.id)}</div>
+        <label>Reden (verplicht)</label>
+        <textarea id="nb_reden" placeholder="Bijv. mes beschadigd, ter reparatie…"></textarea>
+        <div class="modal-actions">
+          <button class="secondary" id="cancelBtn">Annuleren</button>
+          <button class="alertbtn" id="confirmNietBeschikbaarBtn">Niet beschikbaar melden</button>
+        </div>
+      </div></div>`;
+    } else if(mode==='details'){
+      const item = scharen.find(s=>s.id===modalState.id);
+      if(item.status==='niet-beschikbaar'){
+        html += `<div class="overlay" id="overlay"><div class="modal"><button class="close-x" id="closeModal">✕</button>
+          <h2>Schaar #${String(item.id).padStart(2,'0')}</h2>
+          <div class="modal-sub">${typeLabel(item.id)}</div>
+          <div class="alert-badge">Niet beschikbaar</div>
+          <div class="detail-box">
+            <div><span class="k">Reden:</span> ${escapeHtml(item.nietBeschikbaarReden||'—')}</div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary" id="cancelBtn">Sluiten</button>
+            <button class="primary" id="weerBeschikbaarBtn">Weer beschikbaar</button>
+          </div>
+        </div></div>`;
+      } else {
+        const teLaat = isTeLaat(item);
+        html += `<div class="overlay" id="overlay"><div class="modal"><button class="close-x" id="closeModal">✕</button>
+          <h2>Schaar #${String(item.id).padStart(2,'0')}</h2>
+          <div class="modal-sub">${typeLabel(item.id)}</div>
+          ${teLaat ? `<div class="warn-badge">Verwachte terugkomdatum is verstreken</div>` : ''}
+          <div class="detail-box">
+            <div><span class="k">Huurder:</span> ${escapeHtml(item.huurder||'—')}</div>
+            <div><span class="k">SO-nummer:</span> ${escapeHtml(item.soNummer||'—')}</div>
+            <div><span class="k">Datum uit:</span> ${fmtDate(item.datumUit)}</div>
+            <div><span class="k">Verwacht terug:</span> ${fmtDate(item.datumTerugVerwacht)}</div>
+            ${item.notities ? `<div><span class="k">Notities:</span> ${escapeHtml(item.notities)}</div>` : ''}
+          </div>
+          <div class="modal-actions">
+            <button class="secondary" id="cancelBtn">Sluiten</button>
+            <button class="primary" id="terugmeldenBtn">Terugmelden</button>
+          </div>
+        </div></div>`;
+      }
+    }
+  }
+
+  content.innerHTML = html;
+  attachEvents();
+}
+
+function attachEvents(){
+  document.querySelectorAll('.maintab').forEach(btn=>{ btn.onclick = ()=>{ mainTab = btn.dataset.maintab; render(); }; });
+  document.querySelectorAll('.tab').forEach(btn=>{ btn.onclick = ()=>{ filter = btn.dataset.filter; render(); }; });
+  document.querySelectorAll('[data-agview]').forEach(btn=>{ btn.onclick = ()=>{ agendaView = btn.dataset.agview; render(); }; });
+  
+  const zoekInput = document.getElementById('zoekInput');
+  if(zoekInput) zoekInput.oninput = (e)=>{ zoek = e.target.value; render(); };
+  
+  document.querySelectorAll('[data-open]').forEach(card=>{ card.onclick = ()=> openModal(parseInt(card.dataset.open)); });
+  const historyToggle = document.getElementById('historyToggle');
+  if(historyToggle) historyToggle.onclick = ()=>{ historyOpen = !historyOpen; render(); };
+
+  const markNietBeschikbaarBtn = document.getElementById('markNietBeschikbaarBtn');
+  if(markNietBeschikbaarBtn) markNietBeschikbaarBtn.onclick = ()=> switchToNietBeschikbaar(modalState.id);
+
+  const calPrev = document.getElementById('calPrev');
+  const calNext = document.getElementById('calNext');
+  const calToday = document.getElementById('calToday');
+  if(calPrev) calPrev.onclick = ()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} render(); };
+  if(calNext) calNext.onclick = ()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} render(); };
+  if(calToday) calToday.onclick = ()=>{ const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); render(); };
+
+  document.querySelectorAll('[data-verwijder-resv]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); if(confirm('Deze reservering verwijderen?')) verwijderReservering(btn.dataset.verwijderResv); }; });
+
+  const closeBtn = document.getElementById('closeModal');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const overlay = document.getElementById('overlay');
+  if(closeBtn) closeBtn.onclick = closeModal;
+  if(cancelBtn) cancelBtn.onclick = closeModal;
+  if(overlay) overlay.onclick = (e)=>{ if(e.target.id==='overlay') closeModal(); };
+
+  const confirmBtn = document.getElementById('confirmVerhuurBtn');
+  if(confirmBtn) confirmBtn.onclick = ()=>{
+    const huurder = document.getElementById('f_huurder').value.trim();
+    if(!huurder){ alert('Vul een naam in.'); return; }
+    nieuweVerhuring({
+      schaarId: modalState.id,
+      huurder: huurder,
+      soNummer: document.getElementById('f_so').value.trim(),
+      notities: document.getElementById('f_notities').value.trim(),
+      datumUit: document.getElementById('f_uit').value,
+      datumTerugVerwacht: document.getElementById('f_terug').value
+    });
+  };
+  
+  const terugBtn = document.getElementById('terugmeldenBtn');
+  if(terugBtn) terugBtn.onclick = ()=>{ terugmelden(modalState.id); };
+  
+  const confirmNietBeschikbaarBtn = document.getElementById('confirmNietBeschikbaarBtn');
+  if(confirmNietBeschikbaarBtn) confirmNietBeschikbaarBtn.onclick = ()=>{
+    const reden = document.getElementById('nb_reden').value.trim();
+    if(!reden){ alert('Vul een reden in.'); return; }
+    meldNietBeschikbaar(modalState.id, reden);
+  };
+  
+  const weerBeschikbaarBtn = document.getElementById('weerBeschikbaarBtn');
+  if(weerBeschikbaarBtn) weerBeschikbaarBtn.onclick = ()=>{ meldWeerBeschikbaar(modalState.id); };
+}
+
+document.getElementById('loginBtn').onclick = checkPassword;
+document.getElementById('pwInput').onkeyup = (e)=>{ if(e.key==='Enter') checkPassword(); };
+document.getElementById('logoutBtn').onclick = logout;
+</script>
+</body>
+</html>
